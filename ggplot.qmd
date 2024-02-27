@@ -1,0 +1,87 @@
+---
+title: "quiz7"
+format: pdf
+editor: visual
+---
+```{r}
+# Load necessary libraries
+install.packages("tidyverse")
+install.packages("rstanarm")
+library(tidyverse)
+library(ggplot2)
+library(rstanarm)
+
+# Simulate data
+set.seed(123) # for reproducibility
+buildings_df <- tibble(
+  BuildingID = 1:100,
+  NumFloors = sample(1:60, 100, replace = TRUE), # Random number of floors between 1 and 60
+  YearConstructed = sample(1900:2020, 100, replace = TRUE), # Random construction year between 1900 and 2020
+  BuildingUse = sample(c("Residential", "Commercial", "Mixed"), 100, replace = TRUE), # Building use
+  LocationType = sample(c("Central", "Peripheral"), 100, replace = TRUE) # Location type
+)
+
+# Convert factors to categorical variables
+buildings_df$BuildingUse <- as.factor(buildings_df$BuildingUse)
+buildings_df$LocationType <- as.factor(buildings_df$LocationType)
+
+# Model fitting and testing using Poisson regression
+test_results <- vector("list", 10)
+for (i in 1:10) {
+  set.seed(i) # Different seed for each test
+  
+  # Split the data into training and testing sets
+  index <- sample(1:nrow(buildings_df), nrow(buildings_df)*0.8)
+  train_data <- buildings_df[index, ]
+  test_data <- buildings_df[-index, ]
+  
+  # Fit the Poisson regression model
+  model <- stan_glm(NumFloors ~ YearConstructed + BuildingUse + LocationType, 
+                    data = train_data, 
+                    family = poisson(link = "log"))
+  
+  # Make predictions on the test set
+  predictions <- predict(model, test_data, type = "response")
+  
+  # Calculate Mean Squared Error (MSE)
+  mse <- mean((test_data$NumFloors - predictions)^2)
+  
+  # Store the results
+  test_results[[i]] <- mse
+}
+
+# Print the results
+test_results
+
+```
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(rstanarm)
+
+# Assuming buildings_df is the dataframe that contains the building data
+# If you haven't created the dataframe yet, you can simulate it as follows:
+
+set.seed(123) # for reproducibility
+buildings_df <- data.frame(
+  NumFloors = sample(1:60, 100, replace = TRUE), # Random number of floors between 1 and 60
+  YearConstructed = sample(1900:2020, 100, replace = TRUE) # Random construction year between 1900 and 2020
+)
+
+# Create the scatter plot
+ggplot(buildings_df, aes(x = YearConstructed, y = NumFloors)) +
+  geom_point() +
+  labs(title = "Number of Floors by Year of Construction",
+       x = "Year of Construction",
+       y = "Number of Floors") +
+  theme_minimal()
+
+# Fit the Poisson regression model with rstanarm
+model <- stan_glm(NumFloors ~ YearConstructed, data = buildings_df, family = poisson(link = "log"))
+
+# Print the summary of the model
+summary(model)
+
+```
+
+
